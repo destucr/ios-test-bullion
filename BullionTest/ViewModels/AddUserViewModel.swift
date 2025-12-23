@@ -122,7 +122,14 @@ class AddUserViewModel {
         // Prepare API call
         let nameParts = name?.trimmingCharacters(in: .whitespaces).components(separatedBy: " ") ?? []
         let firstName = nameParts.first ?? ""
-        let lastName = nameParts.count > 1 ? nameParts.suffix(from: 1).joined(separator: " ") : ""
+        
+        // If only one name is provided, repeat it as last_name to satisfy strict backends
+        let lastName: String
+        if nameParts.count > 1 {
+            lastName = nameParts.suffix(from: 1).joined(separator: " ")
+        } else {
+            lastName = firstName // Use first name if last name is missing
+        }
         
         let gender = genderIndex == 0 ? "male" : "female"
         
