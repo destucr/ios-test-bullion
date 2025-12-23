@@ -16,7 +16,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         let window = UIWindow(windowScene: windowScene)
-        let rootVC = SignInViewController()
+        
+        // Check if session exists (token in Keychain)
+        let token = KeychainHelper.standard.readString(service: "bullion-ecosystem", account: "auth-token")
+        
+        let rootVC: UIViewController
+        if token != nil {
+            // Already logged in
+            rootVC = UserListViewController()
+        } else {
+            // Need to sign in
+            rootVC = SignInViewController()
+        }
+        
         let nav = UINavigationController(rootViewController: rootVC)
         window.rootViewController = nav
         self.window = window

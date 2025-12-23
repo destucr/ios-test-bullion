@@ -139,7 +139,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     private lazy var submitButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.setTitle("Add User", for: .normal)
+        btn.setTitle("Add Users", for: .normal)
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
         btn.backgroundColor = AddUserViewController.themeColor
         btn.setTitleColor(.white, for: .normal)

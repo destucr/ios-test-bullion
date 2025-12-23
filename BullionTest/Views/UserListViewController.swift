@@ -85,7 +85,7 @@ class UserListViewController: UIViewController {
     private let addUserButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.setTitle("Add New User", for: .normal)
+        btn.setTitle("Add Users", for: .normal)
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
         btn.backgroundColor = AddUserViewController.themeColor
         btn.setTitleColor(.white, for: .normal)
@@ -272,7 +272,15 @@ class UserListViewController: UIViewController {
             let alert = UIAlertController(title: "Error", message: msg, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default)); self?.present(alert, animated: true)
         }
-        viewModel.onLogout = { [weak self] in self?.navigationController?.popToRootViewController(animated: true) }
+                viewModel.onLogout = { [weak self] in
+                    let loginVC = SignInViewController()
+                    let nav = UINavigationController(rootViewController: loginVC)
+                    
+                    if let window = self?.view.window {
+                        window.rootViewController = nav
+                        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil)
+                    }
+                }
         viewModel.onLoading = { [weak self] loading in self?.showLoading(isLoading: loading) }
     }
     
