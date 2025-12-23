@@ -268,8 +268,10 @@ class UserListViewController: UIViewController {
     
     private func showUserDetail(_ user: UserRemote) {
         let popup = UserDetailPopupView(user: user)
-        popup.onEdit = {
-            print("Edit tapped for user: \(user.name)")
+        popup.onEdit = { [weak self] in
+            let vc = AddUserViewController()
+            vc.userToEdit = user
+            self?.navigationController?.pushViewController(vc, animated: true)
         }
         
         popup.frame = view.bounds
@@ -440,10 +442,16 @@ class UserDetailPopupView: UIView {
     }()
     
     private let closeButton: UIButton = {
-        let btn = UIButton(type: .system)
+        let btn = UIButton(type: .custom)
         btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.setImage(UIImage(systemName: "xmark"), for: .normal)
-        btn.tintColor = .black
+        let image = UIImage(named: "closeIcon")?.withRenderingMode(.alwaysTemplate)
+        btn.setImage(image, for: .normal)
+        btn.tintColor = UIColor(red: 0x7D/255, green: 0x7D/255, blue: 0x7D/255, alpha: 1.0)
+        btn.imageView?.contentMode = .scaleAspectFit
+        
+        // Ensure the visual icon size is small (approx 8.25) within the 44x44 button
+        let padding: CGFloat = (44 - 8.25) / 2
+        btn.imageEdgeInsets = UIEdgeInsets(top: padding, left: padding, bottom: padding, right: padding)
         return btn
     }()
     

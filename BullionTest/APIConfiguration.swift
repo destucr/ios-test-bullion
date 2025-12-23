@@ -19,6 +19,7 @@ enum APIEndpoint {
     case register
     case adminList(offset: Int, limit: Int)
     case userDetail(id: String)
+    case updateUser(id: String)
     
     var path: String {
         switch self {
@@ -30,6 +31,8 @@ enum APIEndpoint {
             return "/api/v1/admin?offset=\(offset)&limit=\(limit)"
         case .userDetail(let id):
             return "/api/v1/admin/\(id)"
+        case .updateUser(let id):
+            return "/api/v1/admin/\(id)/update"
         }
     }
     
@@ -37,6 +40,8 @@ enum APIEndpoint {
         switch self {
         case .login, .register:
             return .post
+        case .updateUser:
+            return .put
         case .adminList, .userDetail:
             return .get
         }

@@ -24,6 +24,7 @@ class AddUserViewModel {
     
     weak var delegate: AddUserViewModelDelegate?
     
+    var userId: String? // If present, we are in Edit Mode
     var name: String?
     var genderIndex: Int = -1 // -1 means nothing selected
     var dob: String?
@@ -34,7 +35,39 @@ class AddUserViewModel {
     var password: String?
     var confirmPassword: String?
     
+    var isEditMode: Bool { userId != nil }
+    
     // MARK: - Logic
+    
+    func populate(with user: UserRemote) {
+        self.userId = user._id
+        self.name = user.displayName
+        self.email = user.email
+        self.phone = user.phone
+        self.address = user.address
+        
+        if let gender = user.gender?.lowercased() {
+            self.genderIndex = (gender == "male") ? 0 : 1
+        }
+        
+        if let dobString = user.date_of_birth {
+            // ISO -> dd/MM/yy
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = isoFormatter.date(from: dobString) {
+                let displayFormatter = DateFormatter()
+                displayFormatter.dateFormat = "dd/MM/yy"
+                self.dob = displayFormatter.string(from: date)
+            }
+        }
+        
+        if let photoBase64 = user.photo, !photoBase64.isEmpty {
+            let cleanBase64 = photoBase64.components(separatedBy: ",").last ?? photoBase64
+            if let data = Data(base64Encoded: cleanBase64) {
+                self.photo = UIImage(data: data)
+            }
+        }
+    }
     
     func updatePassword(_ text: String) {
         self.password = text
@@ -66,15 +99,19 @@ class AddUserViewModel {
         var errors: [String] = []
         
         // Validation logic
-        if photo == nil { errors.append("Profile photo is required.") }
+        if !isEditMode && photo == nil { errors.append("Profile photo is required.") }
         if name?.trimmingCharacters(in: .whitespaces).isEmpty ?? true { errors.append("Name is required.") }
         if genderIndex == -1 { errors.append("Gender is required.") }
         if dob?.isEmpty ?? true { errors.append("Date of Birth is required.") }
         if email?.isEmpty ?? true || !isValidEmail(email ?? "") { errors.append("Valid email is required.") }
         if phone?.isEmpty ?? true { errors.append("Phone number is required.") }
         if address?.isEmpty ?? true { errors.append("Address is required.") }
-        if !isValidPassword(password ?? "") { errors.append("Password does not meet requirements.") }
-        if password != confirmPassword { errors.append("Passwords do not match.") }
+        
+        // For Edit, password/confirm are completely ignored as per request.
+        if !isEditMode {
+            if !isValidPassword(password ?? "") { errors.append("Password does not meet requirements.") }
+            if password != confirmPassword { errors.append("Passwords do not match.") }
+        }
         
         if !errors.isEmpty {
             delegate?.onValidationFailure(errors: errors)
@@ -87,37 +124,39 @@ class AddUserViewModel {
         let nameParts = name?.components(separatedBy: " ") ?? []
         let firstName = nameParts.first ?? ""
         let lastName = nameParts.count > 1 ? nameParts.suffix(from: 1).joined(separator: " ") : firstName
-        
         let gender = genderIndex == 0 ? "male" : "female"
         
-        // Convert photo to base64
-        let photoBase64 = photo?.jpegData(compressionQuality: 0.5)?.base64EncodedString() ?? ""
-        
-        // Format DOB for API (assuming ISO8601)
-        // Original dob is "dd/MM/yy"
         let inputFormatter = DateFormatter()
         inputFormatter.dateFormat = "dd/MM/yy"
         let outputFormatter = ISO8601DateFormatter()
         outputFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
         var apiDob = dob ?? ""
         if let date = inputFormatter.date(from: dob ?? "") {
             apiDob = outputFormatter.string(from: date)
         }
         
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "first_name": firstName,
             "last_name": lastName,
             "gender": gender,
             "date_of_birth": apiDob,
             "email": email ?? "",
             "phone": phone ?? "",
-            "address": address ?? "",
-            "photo": photoBase64,
-            "password": sha256(password ?? "")
+            "address": address ?? ""
         ]
         
-        NetworkManager.shared.request(endpoint: .register, body: body) { (result: Result<BaseResponse<LoginData>, Error>) in
+        if let photoData = photo?.jpegData(compressionQuality: 0.5) {
+            body["photo"] = photoData.base64EncodedString()
+        }
+        
+        // Only add password for NEW users
+        if !isEditMode, let pass = password, !pass.isEmpty {
+            body["password"] = sha256(pass)
+        }
+        
+        let endpoint: APIEndpoint = isEditMode ? .updateUser(id: userId!) : .register
+        
+        NetworkManager.shared.request(endpoint: endpoint, body: body) { (result: Result<BaseResponse<LoginData>, Error>) in
             DispatchQueue.main.async {
                 self.delegate?.onLoading(false)
                 switch result {
