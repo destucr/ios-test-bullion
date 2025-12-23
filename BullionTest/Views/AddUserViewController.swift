@@ -430,7 +430,8 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     }
     
     @objc func doneDate() {
-        let formatter = DateFormatter(); formatter.dateFormat = "dd/MM/yy"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMMM yyyy"
         let dateString = formatter.string(from: datePicker.date)
         dobField.text = dateString; viewModel.dob = dateString
         view.endEditing(true)

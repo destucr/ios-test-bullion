@@ -51,12 +51,12 @@ class AddUserViewModel {
         }
         
         if let dobString = user.date_of_birth {
-            // ISO -> dd/MM/yy
+            // ISO -> dd MMMM yyyy
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             if let date = isoFormatter.date(from: dobString) {
                 let displayFormatter = DateFormatter()
-                displayFormatter.dateFormat = "dd/MM/yy"
+                displayFormatter.dateFormat = "dd MMMM yyyy"
                 self.dob = displayFormatter.string(from: date)
             }
         }
@@ -107,7 +107,6 @@ class AddUserViewModel {
         if phone?.isEmpty ?? true { errors.append("Phone number is required.") }
         if address?.isEmpty ?? true { errors.append("Address is required.") }
         
-        // For Edit, password/confirm are completely ignored as per request.
         if !isEditMode {
             if !isValidPassword(password ?? "") { errors.append("Password does not meet requirements.") }
             if password != confirmPassword { errors.append("Passwords do not match.") }
@@ -121,21 +120,29 @@ class AddUserViewModel {
         delegate?.onLoading(true)
         
         // Prepare API call
-        let nameParts = name?.components(separatedBy: " ") ?? []
+        let nameParts = name?.trimmingCharacters(in: .whitespaces).components(separatedBy: " ") ?? []
         let firstName = nameParts.first ?? ""
-        let lastName = nameParts.count > 1 ? nameParts.suffix(from: 1).joined(separator: " ") : firstName
+        let lastName = nameParts.count > 1 ? nameParts.suffix(from: 1).joined(separator: " ") : ""
+        
         let gender = genderIndex == 0 ? "male" : "female"
         
+        // Format DOB for API (e.g., 1995-08-31T00:00:00.000Z)
         let inputFormatter = DateFormatter()
-        inputFormatter.dateFormat = "dd/MM/yy"
-        let outputFormatter = ISO8601DateFormatter()
-        outputFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        inputFormatter.dateFormat = "dd MMMM yyyy"
+        inputFormatter.locale = Locale(identifier: "en_US_POSIX")
+        inputFormatter.timeZone = TimeZone(secondsFromGMT: 0) // Parse as UTC midnight
+        
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        outputFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        outputFormatter.locale = Locale(identifier: "en_US_POSIX")
+        
         var apiDob = dob ?? ""
         if let date = inputFormatter.date(from: dob ?? "") {
             apiDob = outputFormatter.string(from: date)
         }
         
-        var body: [String: Any] = [
+        var params: [String: String] = [
             "first_name": firstName,
             "last_name": lastName,
             "gender": gender,
@@ -145,18 +152,14 @@ class AddUserViewModel {
             "address": address ?? ""
         ]
         
-        if let photoData = photo?.jpegData(compressionQuality: 0.5) {
-            body["photo"] = photoData.base64EncodedString()
+        if !isEditMode {
+            params["password"] = sha256(password ?? "")
         }
         
-        // Only add password for NEW users
-        if !isEditMode, let pass = password, !pass.isEmpty {
-            body["password"] = sha256(pass)
-        }
-        
+        let photoData = photo?.jpegData(compressionQuality: 0.5)
         let endpoint: APIEndpoint = isEditMode ? .updateUser(id: userId!) : .register
         
-        NetworkManager.shared.request(endpoint: endpoint, body: body) { (result: Result<BaseResponse<LoginData>, Error>) in
+        NetworkManager.shared.multipartRequest(endpoint: endpoint, params: params, imageData: photoData, imageKey: "photo") { (result: Result<BaseResponse<LoginData>, Error>) in
             DispatchQueue.main.async {
                 self.delegate?.onLoading(false)
                 switch result {

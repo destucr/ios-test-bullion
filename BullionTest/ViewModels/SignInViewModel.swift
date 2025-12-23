@@ -9,7 +9,7 @@ import Foundation
 import CryptoKit
 
 struct LoginData: Decodable {
-    let token: String
+    let token: String?
     let name: String?
     let email: String?
 }
@@ -44,14 +44,18 @@ class SignInViewModel {
                 self.onLoading?(false)
                 switch result {
                 case .success(let response):
-                    // Check if iserror is true despite 200 OK (common API pattern)
                     if response.iserror {
                         self.onSignInFailure?(response.message)
                         return
                     }
                     
+                    guard let token = response.data.token else {
+                        self.onSignInFailure?("Login succeeded but no token was received.")
+                        return
+                    }
+                    
                     // Save token securely
-                    KeychainHelper.standard.save(response.data.token, service: "bullion-ecosystem", account: "auth-token")
+                    KeychainHelper.standard.save(token, service: "bullion-ecosystem", account: "auth-token")
                     self.onSignInSuccess?()
                     
                 case .failure(let error):

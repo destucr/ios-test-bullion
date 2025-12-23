@@ -20,7 +20,7 @@ class UserListViewModel {
     func fetchUsers() {
         onLoading?(true)
         // Structured endpoint
-        NetworkManager.shared.request(endpoint: .adminList(offset: 5, limit: 5)) { (result: Result<BaseResponse<[UserRemote]>, Error>) in
+        NetworkManager.shared.request(endpoint: .adminList(offset: 0, limit: 0)) { (result: Result<BaseResponse<[UserRemote]>, Error>) in
             DispatchQueue.main.async {
                 self.onLoading?(false)
                 switch result {
