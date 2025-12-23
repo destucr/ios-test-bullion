@@ -71,7 +71,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     private let femaleCheckbox: UIButton = AddUserViewController.makeCheckboxButton(title: "Female")
     
     private lazy var dobLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Date of Birth")
-    private let dobField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "DD MMMM YYYY")
+    private let dobField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "DD MM YYYY")
     
     private lazy var emailLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Email Address")
     private let emailField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "Enter Email")
