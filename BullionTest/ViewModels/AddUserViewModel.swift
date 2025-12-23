@@ -7,11 +7,15 @@
 
 import Foundation
 import UIKit
+import CryptoKit
 
 protocol AddUserViewModelDelegate: AnyObject {
     func onValidationSuccess()
     func onValidationFailure(errors: [String])
     func onPasswordValidationUpdate(isValid: Bool, message: String)
+    func onRegistrationSuccess()
+    func onRegistrationFailure(message: String)
+    func onLoading(_ isLoading: Bool)
 }
 
 class AddUserViewModel {
@@ -26,6 +30,7 @@ class AddUserViewModel {
     var email: String?
     var phone: String?
     var photo: UIImage?
+    var address: String?
     var password: String?
     var confirmPassword: String?
     
@@ -43,20 +48,14 @@ class AddUserViewModel {
     func setPhoto(_ image: UIImage) -> String? {
         // Validate Image Size and Format (Simulated by checking data)
         // Ensure JPEG
-        guard let data = image.jpegData(compressionQuality: 1.0) else {
-            return "Could not process image as JPEG."
+        guard let data = image.jpegData(compressionQuality: 0.7) else {
+            return "Could not process image."
         }
         
         // Check size (5MB = 5 * 1024 * 1024 bytes)
         let maxSizeBytes = 5 * 1024 * 1024
         if data.count > maxSizeBytes {
-             // Try compressing
-             if let compressedData = image.jpegData(compressionQuality: 0.5), compressedData.count <= maxSizeBytes {
-                  self.photo = UIImage(data: compressedData)
-                  return nil // Success after compression
-             } else {
-                 return "Image is too large (>5MB)."
-             }
+             return "Image is too large (>5MB)."
         } else {
             self.photo = image
             return nil // Success
@@ -66,75 +65,82 @@ class AddUserViewModel {
     func submit() {
         var errors: [String] = []
         
-        // 1. Photo Validation
-        if photo == nil {
-            errors.append("Profile photo is required.")
-        }
+        // Validation logic
+        if photo == nil { errors.append("Profile photo is required.") }
+        if name?.trimmingCharacters(in: .whitespaces).isEmpty ?? true { errors.append("Name is required.") }
+        if genderIndex == -1 { errors.append("Gender is required.") }
+        if dob?.isEmpty ?? true { errors.append("Date of Birth is required.") }
+        if email?.isEmpty ?? true || !isValidEmail(email ?? "") { errors.append("Valid email is required.") }
+        if phone?.isEmpty ?? true { errors.append("Phone number is required.") }
+        if address?.isEmpty ?? true { errors.append("Address is required.") }
+        if !isValidPassword(password ?? "") { errors.append("Password does not meet requirements.") }
+        if password != confirmPassword { errors.append("Passwords do not match.") }
         
-        // 2. Name Validation
-        if let name = name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            // valid
-        } else {
-            errors.append("Name is required.")
-        }
-        
-        // 3. Gender Validation
-        if genderIndex == -1 {
-            errors.append("Gender is required.")
-        }
-        
-        // 4. DOB Validation
-        if let dob = dob, !dob.isEmpty {
-            // valid
-        } else {
-            errors.append("Date of Birth is required.")
-        }
-        
-        // 5. Email Validation
-        if let email = email, !email.isEmpty {
-            if !isValidEmail(email) {
-                errors.append("Invalid email format.")
-            }
-        } else {
-            errors.append("Email is required.")
-        }
-        
-        // 6. Phone Validation
-        if let phone = phone, !phone.isEmpty {
-            if !CharacterSet.decimalDigits.isSuperset(of: CharacterSet(charactersIn: phone)) {
-                 errors.append("Phone number must contain only numbers.")
-            }
-        } else {
-            errors.append("Phone number is required.")
-        }
-        
-        // 7. Password Validation
-        if let pass = password {
-            if !isValidPassword(pass) {
-                errors.append("Password does not meet requirements.")
-            }
-        } else {
-             errors.append("Password is required.") // implied by regex check usually but good to be explicit
-        }
-        
-        // 8. Confirm Password
-        if let confirm = confirmPassword, let pass = password {
-            if confirm != pass {
-                errors.append("Passwords do not match.")
-            }
-        } else if confirmPassword == nil {
-             // If password was entered but confirm wasn't
-             errors.append("Please confirm your password.")
-        }
-        
-        if errors.isEmpty {
-            delegate?.onValidationSuccess()
-        } else {
+        if !errors.isEmpty {
             delegate?.onValidationFailure(errors: errors)
+            return
+        }
+        
+        delegate?.onLoading(true)
+        
+        // Prepare API call
+        let nameParts = name?.components(separatedBy: " ") ?? []
+        let firstName = nameParts.first ?? ""
+        let lastName = nameParts.count > 1 ? nameParts.suffix(from: 1).joined(separator: " ") : firstName
+        
+        let gender = genderIndex == 0 ? "male" : "female"
+        
+        // Convert photo to base64
+        let photoBase64 = photo?.jpegData(compressionQuality: 0.5)?.base64EncodedString() ?? ""
+        
+        // Format DOB for API (assuming ISO8601)
+        // Original dob is "dd/MM/yy"
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "dd/MM/yy"
+        let outputFormatter = ISO8601DateFormatter()
+        outputFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        var apiDob = dob ?? ""
+        if let date = inputFormatter.date(from: dob ?? "") {
+            apiDob = outputFormatter.string(from: date)
+        }
+        
+        let body: [String: Any] = [
+            "first_name": firstName,
+            "last_name": lastName,
+            "gender": gender,
+            "date_of_birth": apiDob,
+            "email": email ?? "",
+            "phone": phone ?? "",
+            "address": address ?? "",
+            "photo": photoBase64,
+            "password": sha256(password ?? "")
+        ]
+        
+        NetworkManager.shared.request(endpoint: .register, body: body) { (result: Result<BaseResponse<LoginData>, Error>) in
+            DispatchQueue.main.async {
+                self.delegate?.onLoading(false)
+                switch result {
+                case .success(let response):
+                    if response.iserror {
+                        self.delegate?.onRegistrationFailure(message: response.message)
+                    } else {
+                        self.delegate?.onRegistrationSuccess()
+                    }
+                case .failure(let error):
+                    self.delegate?.onRegistrationFailure(message: error.localizedDescription)
+                }
+            }
         }
     }
     
     // MARK: - Helpers
+    
+    private func sha256(_ string: String) -> String {
+        let inputData = Data(string.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.map { String(format: "%02x", $0) }.joined()
+    }
     
     private func isValidEmail(_ email: String) -> Bool {
         let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
@@ -144,11 +150,9 @@ class AddUserViewModel {
     
     private func isValidPassword(_ pass: String) -> Bool {
         if pass.count < 8 { return false }
-        
         let hasCapital = pass.range(of: "[A-Z]", options: .regularExpression) != nil
         let hasNumber = pass.range(of: "[0-9]", options: .regularExpression) != nil
         let hasAlphabet = pass.range(of: "[a-zA-Z]", options: .regularExpression) != nil
-        
         return hasCapital && hasNumber && hasAlphabet
     }
 }

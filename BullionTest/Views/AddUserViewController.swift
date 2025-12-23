@@ -83,6 +83,10 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     private lazy var phoneLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Phone Number")
     private let phoneField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "Enter Phone Number")
     
+    // --- Address ---
+    private lazy var addressLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Address")
+    private let addressField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "Enter Address")
+    
     // --- Photo ---
     private lazy var photoLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Photo Profile")
     private let photoContainerView: UIView = {
@@ -230,6 +234,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             dobLabel, dobField,
             emailLabel, emailField,
             phoneLabel, phoneField,
+            addressLabel, addressField,
             photoLabel, photoContainerView,
             passwordLabel, passwordField, passwordWarningLabel,
             confirmPasswordLabel, confirmPasswordField,
@@ -306,8 +311,18 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             phoneField.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
             phoneField.heightAnchor.constraint(equalToConstant: 50),
             
+            // Address
+            addressLabel.topAnchor.constraint(equalTo: phoneField.bottomAnchor, constant: sectionSpacing),
+            addressLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            addressLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
+            
+            addressField.topAnchor.constraint(equalTo: addressLabel.bottomAnchor, constant: fieldSpacing),
+            addressField.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            addressField.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
+            addressField.heightAnchor.constraint(equalToConstant: 50),
+            
             // Photo
-            photoLabel.topAnchor.constraint(equalTo: phoneField.bottomAnchor, constant: sectionSpacing),
+            photoLabel.topAnchor.constraint(equalTo: addressField.bottomAnchor, constant: sectionSpacing),
             photoLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             photoLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
             
@@ -399,6 +414,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         nameField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
         emailField.addTarget(self, action: #selector(emailChanged), for: .editingChanged)
         phoneField.addTarget(self, action: #selector(phoneChanged), for: .editingChanged)
+        addressField.addTarget(self, action: #selector(addressChanged), for: .editingChanged)
         passwordField.addTarget(self, action: #selector(passwordChanged), for: .editingChanged)
         confirmPasswordField.addTarget(self, action: #selector(confirmPasswordChanged), for: .editingChanged)
         
@@ -419,6 +435,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         dobField.delegate = self
         emailField.delegate = self
         phoneField.delegate = self
+        addressField.delegate = self
         passwordField.delegate = self
         confirmPasswordField.delegate = self
     }
@@ -433,6 +450,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     @objc func nameChanged(_ sender: UITextField) { viewModel.name = sender.text }
     @objc func emailChanged(_ sender: UITextField) { viewModel.email = sender.text }
     @objc func phoneChanged(_ sender: UITextField) { viewModel.phone = sender.text }
+    @objc func addressChanged(_ sender: UITextField) { viewModel.address = sender.text }
     @objc func passwordChanged(_ sender: UITextField) { viewModel.updatePassword(sender.text ?? "") }
     @objc func confirmPasswordChanged(_ sender: UITextField) { viewModel.confirmPassword = sender.text }
     
@@ -556,7 +574,23 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     // MARK: - ViewModel Delegate
     
     func onValidationSuccess() {
-        let alert = UIAlertController(title: "Success", message: "User added successfully!", preferredStyle: .alert)
+        // No-op or loading indicator
+    }
+    
+    func onLoading(_ isLoading: Bool) {
+        self.showLoading(isLoading)
+    }
+    
+    func onRegistrationSuccess() {
+        let alert = UIAlertController(title: "Success", message: "User registered successfully!", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            self.navigationController?.popViewController(animated: true)
+        }))
+        present(alert, animated: true)
+    }
+    
+    func onRegistrationFailure(message: String) {
+        let alert = UIAlertController(title: "Registration Failed", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }

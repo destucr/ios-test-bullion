@@ -11,6 +11,7 @@ class SignInViewController: UIViewController {
 
     private let viewModel = SignInViewModel()
     private let topAreaGuide = UILayoutGuide()
+    private var bottomSheetBottomConstraint: NSLayoutConstraint?
 
     // MARK: - UI Components
     
@@ -84,6 +85,8 @@ class SignInViewController: UIViewController {
         view.backgroundColor = AddUserViewController.orangeColor
         setupUI()
         setupActions()
+        setupBindings()
+        setupKeyboardHandling()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -93,16 +96,36 @@ class SignInViewController: UIViewController {
     
     // MARK: - Setup
     
+    private func setupBindings() {
+        viewModel.onSignInSuccess = { [weak self] in
+            let vc = UserListViewController()
+            self?.navigationController?.pushViewController(vc, animated: true)
+        }
+        
+        viewModel.onSignInFailure = { [weak self] errorMessage in
+            let alert = UIAlertController(title: "Sign In Failed", message: errorMessage, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self?.present(alert, animated: true)
+        }
+        
+        viewModel.onLoading = { [weak self] isLoading in
+            self?.showLoading(isLoading)
+        }
+    }
+    
     private func setupUI() {
         view.addSubview(logoImageView)
         view.addSubview(bottomSheetView)
         view.addLayoutGuide(topAreaGuide)
+        
+        // Dynamic bottom constraint
+        bottomSheetBottomConstraint = bottomSheetView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
 
         NSLayoutConstraint.activate([
                // Bottom sheet
                bottomSheetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                bottomSheetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-               bottomSheetView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+               bottomSheetBottomConstraint!, // Activate dynamic constraint
                bottomSheetView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.47),
 
                // Top orange area
@@ -187,6 +210,11 @@ class SignInViewController: UIViewController {
         textField.rightViewMode = .always
     }
     
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
     private func setupActions() {
         emailField.addTarget(self, action: #selector(emailChanged), for: .editingChanged)
         passwordField.addTarget(self, action: #selector(passwordChanged), for: .editingChanged)
@@ -223,6 +251,28 @@ class SignInViewController: UIViewController {
 
         }
 
+    }
+    
+    // MARK: - Keyboard Handling
+    
+    @objc func keyboardWillShow(notification: NSNotification) {
+        if let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
+            // Move the bottom sheet up by the keyboard height
+            bottomSheetBottomConstraint?.constant = -keyboardSize.height + 30 // +30 buffer if needed, or 0
+            
+            UIView.animate(withDuration: 0.3) {
+                self.view.layoutIfNeeded()
+            }
+        }
+    }
+
+    @objc func keyboardWillHide(notification: NSNotification) {
+        // Reset the bottom sheet position
+        bottomSheetBottomConstraint?.constant = 0
+        
+        UIView.animate(withDuration: 0.3) {
+            self.view.layoutIfNeeded()
+        }
     }
 
     @objc private func dismissKeyboard() {
