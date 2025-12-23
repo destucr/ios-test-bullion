@@ -15,8 +15,8 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     private var activeField: UITextField?
     var userToEdit: UserRemote?
     
-    static let themeColor = UIColor(red: 37/255, green: 94/255, blue: 146/255, alpha: 1.0)
-    static let orangeColor = UIColor(named: "bgOrange") ?? UIColor(red: 252/255, green: 104/255, blue: 58/255, alpha: 1.0)
+    static let themeColor = UIColor(hex: "#255E92")
+    static let orangeColor = UIColor(named: "bgOrange") ?? UIColor(hex: "#FC683A")
 
     // MARK: - UI Components
     
@@ -156,7 +156,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
-        view.backgroundColor = AddUserViewController.orangeColor
+        view.applyBullionGradient()
         viewModel.delegate = self
         setupUI()
         setupActions()
@@ -166,6 +166,11 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             viewModel.populate(with: user)
             populateUI()
         }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        view.updateGradientFrame()
     }
     
     private func populateUI() {

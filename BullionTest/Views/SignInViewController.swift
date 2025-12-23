@@ -82,11 +82,16 @@ class SignInViewController: UIViewController {
         )
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
-        view.backgroundColor = AddUserViewController.orangeColor
+        view.applyBullionGradient()
         setupUI()
         setupActions()
         setupBindings()
         setupKeyboardHandling()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        view.updateGradientFrame()
     }
     
     override func viewWillAppear(_ animated: Bool) {

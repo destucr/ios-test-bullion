@@ -108,12 +108,17 @@ class UserListViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = AddUserViewController.orangeColor
+        view.applyBullionGradient()
         setupUI()
         setupActions()
         setupTableView()
         setupBindings()
         setupBanners()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        view.updateGradientFrame()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -340,15 +345,15 @@ class UserCardCell: UITableViewCell {
         return iv
     }()
     private let nameLabel: UILabel = {
-        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.boldSystemFont(ofSize: 25)
+        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.boldSystemFont(ofSize: 12)
         return l
     }()
     private let emailLabel: UILabel = {
-        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.systemFont(ofSize: 12); l.textColor = .gray
+        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.systemFont(ofSize: 10); l.textColor = .gray
         return l
     }()
     private let dobLabel: UILabel = {
-        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.systemFont(ofSize: 12); l.textColor = UIColor(red: 0x03/255, green: 0x03/255, blue: 0x03/255, alpha: 1.0)
+        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.systemFont(ofSize: 10); l.textColor = UIColor(hex: "#030303")
         return l
     }()
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) { super.init(style: style, reuseIdentifier: reuseIdentifier); setupUI() }

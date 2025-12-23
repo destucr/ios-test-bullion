@@ -18,7 +18,7 @@ class UserDetailPopupView: UIView {
         btn.translatesAutoresizingMaskIntoConstraints = false
         let image = UIImage(named: "closeIcon")?.withRenderingMode(.alwaysTemplate)
         btn.setImage(image, for: .normal)
-        btn.tintColor = UIColor(red: 0x7D/255, green: 0x7D/255, blue: 0x7D/255, alpha: 1.0)
+        btn.tintColor = UIColor(hex: "#7D7D7D")
         btn.imageView?.contentMode = .scaleAspectFit
         let padding: CGFloat = (44 - 8.25) / 2
         btn.imageEdgeInsets = UIEdgeInsets(top: padding, left: padding, bottom: padding, right: padding)
@@ -47,7 +47,7 @@ class UserDetailPopupView: UIView {
         let lbl = UILabel()
         lbl.translatesAutoresizingMaskIntoConstraints = false
         lbl.font = UIFont.systemFont(ofSize: 14)
-        lbl.textColor = UIColor(red: 0x5D/255, green: 0x5D/255, blue: 0x5D/255, alpha: 1.0)
+        lbl.textColor = UIColor(hex: "#5D5D5D")
         lbl.textAlignment = .left
         return lbl
     }()
@@ -203,7 +203,7 @@ class UserDetailPopupView: UIView {
         titleLbl.translatesAutoresizingMaskIntoConstraints = false
         titleLbl.text = title
         titleLbl.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        titleLbl.textColor = UIColor(red: 0x5D/255, green: 0x5D/255, blue: 0x5D/255, alpha: 1.0)
+        titleLbl.textColor = UIColor(hex: "#5D5D5D")
         titleLbl.textAlignment = .left
         
         let valueLbl = UILabel()
