@@ -183,8 +183,12 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         updateGenderSelection(isMale: viewModel.genderIndex == 0)
         
         if viewModel.photo != nil {
-            photoTextFieldText.text = "profile_photo.jpg"
-            photoTextFieldText.textColor = .black
+            let text = "profile_photo.jpg"
+            let attributedString = NSMutableAttributedString(string: text)
+            attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: text.count))
+            photoTextFieldText.attributedText = attributedString
+            photoTextFieldText.textColor = UIColor(hex: "#255E92")
+            photoIconImageView.tintColor = UIColor(hex: "#255E92")
         }
         
         submitButton.setTitle("Update User", for: .normal)
@@ -384,6 +388,18 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         toolbar.setItems([done], animated: true)
         dobField.inputView = datePicker
         dobField.inputAccessoryView = toolbar
+        
+        // Add Calendar Icon to DOB Field (Using asset calendarAlt)
+        let iconView = UIImageView(image: UIImage(named: "calendarAlt"))
+        iconView.tintColor = .systemGray
+        iconView.contentMode = .scaleAspectFit
+        
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: 40, height: 50))
+        iconView.frame = CGRect(x: 0, y: 15, width: 20, height: 20)
+        container.addSubview(iconView)
+        
+        dobField.rightView = container
+        dobField.rightViewMode = .always
     }
     
     private func setupPasswordToggle(for tf: UITextField) {
@@ -515,12 +531,25 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             if let error = viewModel.setPhoto(image) {
                 print(error)
             } else {
+                let filename: String
                 if let url = info[.imageURL] as? URL {
-                    photoTextFieldText.text = url.lastPathComponent
+                    filename = url.lastPathComponent
                 } else {
-                    photoTextFieldText.text = "image_\(Int(Date().timeIntervalSince1970)).jpg"
+                    filename = "image_\(Int(Date().timeIntervalSince1970)).jpg"
                 }
-                photoTextFieldText.textColor = .black
+                
+                if userToEdit != nil {
+                    let attributedString = NSMutableAttributedString(string: filename)
+                    attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: filename.count))
+                    photoTextFieldText.attributedText = attributedString
+                    photoTextFieldText.textColor = UIColor(hex: "#255E92")
+                    photoIconImageView.tintColor = UIColor(hex: "#255E92")
+                } else {
+                    photoTextFieldText.attributedText = nil
+                    photoTextFieldText.text = filename
+                    photoTextFieldText.textColor = .black
+                    photoIconImageView.tintColor = .systemGray
+                }
             }
         }
     }

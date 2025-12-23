@@ -29,7 +29,7 @@ class UserDetailPopupView: UIView {
         let iv = UIImageView()
         iv.translatesAutoresizingMaskIntoConstraints = false
         iv.contentMode = .scaleAspectFill
-        iv.layer.cornerRadius = 60
+        iv.layer.cornerRadius = 40
         iv.clipsToBounds = true
         iv.backgroundColor = .systemGray6
         return iv
@@ -103,8 +103,8 @@ class UserDetailPopupView: UIView {
             
             photoImageView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 40),
             photoImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 24),
-            photoImageView.widthAnchor.constraint(equalToConstant: 120),
-            photoImageView.heightAnchor.constraint(equalToConstant: 120),
+            photoImageView.widthAnchor.constraint(equalToConstant: 80),
+            photoImageView.heightAnchor.constraint(equalToConstant: 80),
             
             nameLabel.topAnchor.constraint(equalTo: photoImageView.bottomAnchor, constant: 16),
             nameLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 24),

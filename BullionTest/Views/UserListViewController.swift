@@ -349,7 +349,7 @@ class UserCardCell: UITableViewCell {
     }()
     private let photoImageView: UIImageView = {
         let iv = UIImageView(); iv.translatesAutoresizingMaskIntoConstraints = false
-        iv.backgroundColor = .systemGray6; iv.layer.cornerRadius = 30; iv.clipsToBounds = true; iv.contentMode = .scaleAspectFill
+        iv.backgroundColor = .systemGray6; iv.layer.cornerRadius = 20; iv.clipsToBounds = true; iv.contentMode = .scaleAspectFill
         return iv
     }()
     private let nameLabel: UILabel = {
@@ -377,8 +377,8 @@ class UserCardCell: UITableViewCell {
             cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
             photoImageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
             photoImageView.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
-            photoImageView.widthAnchor.constraint(equalToConstant: 60),
-            photoImageView.heightAnchor.constraint(equalToConstant: 60),
+            photoImageView.widthAnchor.constraint(equalToConstant: 40),
+            photoImageView.heightAnchor.constraint(equalToConstant: 40),
             nameLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             nameLabel.leadingAnchor.constraint(equalTo: photoImageView.trailingAnchor, constant: 12),
             nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: dobLabel.leadingAnchor, constant: -8),
