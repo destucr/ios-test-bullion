@@ -71,7 +71,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     private let femaleCheckbox: UIButton = AddUserViewController.makeCheckboxButton(title: "Female")
     
     private lazy var dobLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Date of Birth")
-    private let dobField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "DD/MM/YY")
+    private let dobField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "DD MMMM YYYY")
     
     private lazy var emailLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Email Address")
     private let emailField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "Enter Email")
@@ -116,7 +116,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     private let passwordWarningLabel: UILabel = {
         let lbl = UILabel()
         lbl.translatesAutoresizingMaskIntoConstraints = false
-        lbl.text = "Min 8 chars, 1 capital, 1 number, alphanumeric."
+        lbl.text = "Min 8 Char | Min 1 Capital and Number"
         lbl.font = UIFont.systemFont(ofSize: 12)
         lbl.textColor = .systemGray
         lbl.numberOfLines = 0
@@ -125,6 +125,16 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     
     private lazy var confirmPasswordLabel: UILabel = AddUserViewController.makeTitleLabel(text: "Confirm Password")
     private let confirmPasswordField: UITextField = AddUserViewController.makeRoundedTextField(placeholder: "Re-enter Password", isSecure: true)
+    
+    private let confirmPasswordWarningLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.translatesAutoresizingMaskIntoConstraints = false
+        lbl.text = "Make sure the password matches"
+        lbl.font = UIFont.systemFont(ofSize: 12)
+        lbl.textColor = .systemGray
+        lbl.numberOfLines = 0
+        return lbl
+    }()
     
     private lazy var submitButton: UIButton = {
         let btn = UIButton(type: .system)
@@ -168,7 +178,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         updateGenderSelection(isMale: viewModel.genderIndex == 0)
         
         if viewModel.photo != nil {
-            photoTextFieldText.text = "Photo Selected"
+            photoTextFieldText.text = "profile_photo.jpg"
             photoTextFieldText.textColor = .black
         }
         
@@ -242,7 +252,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             addressLabel, addressField,
             photoLabel, photoContainerView,
             passwordLabel, passwordField, passwordWarningLabel,
-            confirmPasswordLabel, confirmPasswordField,
+            confirmPasswordLabel, confirmPasswordField, confirmPasswordWarningLabel,
             submitButton
         ]
         views.forEach { bottomSheetView.addSubview($0) }
@@ -253,6 +263,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             passwordWarningLabel.isHidden = true
             confirmPasswordLabel.isHidden = true
             confirmPasswordField.isHidden = true
+            confirmPasswordWarningLabel.isHidden = true
         }
         
         setupConstraints()
@@ -270,7 +281,6 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         let spacing: CGFloat = 8
         let section: CGFloat = 20
         
-        // Base constraints shared by both modes
         NSLayoutConstraint.activate([
             nameLabel.topAnchor.constraint(equalTo: bottomSheetView.topAnchor, constant: 40),
             nameLabel.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: padding),
@@ -320,11 +330,10 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             photoContainerView.topAnchor.constraint(equalTo: photoLabel.bottomAnchor, constant: spacing),
             photoContainerView.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             photoContainerView.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
-            photoContainerView.heightAnchor.constraint(equalToConstant: 50),
+            photoContainerView.heightAnchor.constraint(equalToConstant: 50)
         ])
         
         if userToEdit == nil {
-            // New User Mode: Include Passwords
             NSLayoutConstraint.activate([
                 passwordLabel.topAnchor.constraint(equalTo: photoContainerView.bottomAnchor, constant: section),
                 passwordLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
@@ -342,10 +351,12 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
                 confirmPasswordField.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
                 confirmPasswordField.heightAnchor.constraint(equalToConstant: 50),
                 
-                submitButton.topAnchor.constraint(equalTo: confirmPasswordField.bottomAnchor, constant: 50),
+                confirmPasswordWarningLabel.topAnchor.constraint(equalTo: confirmPasswordField.bottomAnchor, constant: 5),
+                confirmPasswordWarningLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+                
+                submitButton.topAnchor.constraint(equalTo: confirmPasswordWarningLabel.bottomAnchor, constant: 50),
             ])
         } else {
-            // Edit Mode: Skip Passwords, attach Submit directly to Photo Container
             NSLayoutConstraint.activate([
                 submitButton.topAnchor.constraint(equalTo: photoContainerView.bottomAnchor, constant: 50),
             ])
@@ -430,8 +441,7 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
     }
     
     @objc func doneDate() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd MMMM yyyy"
+        let formatter = DateFormatter(); formatter.dateFormat = "dd MMMM yyyy"
         let dateString = formatter.string(from: datePicker.date)
         dobField.text = dateString; viewModel.dob = dateString
         view.endEditing(true)
@@ -499,7 +509,14 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
         if let image = info[.originalImage] as? UIImage {
             if let error = viewModel.setPhoto(image) {
                 print(error)
-            } else { photoTextFieldText.text = "Photo Selected"; photoTextFieldText.textColor = .black }
+            } else {
+                if let url = info[.imageURL] as? URL {
+                    photoTextFieldText.text = url.lastPathComponent
+                } else {
+                    photoTextFieldText.text = "image_\(Int(Date().timeIntervalSince1970)).jpg"
+                }
+                photoTextFieldText.textColor = .black
+            }
         }
     }
     @objc private func dismissKeyboard() { view.endEditing(true) }

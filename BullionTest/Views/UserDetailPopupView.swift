@@ -127,6 +127,44 @@ class UserDetailPopupView: UIView {
         
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
+        
+        photoImageView.isUserInteractionEnabled = true
+        photoImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(photoTapped)))
+    }
+    
+    @objc private func photoTapped() {
+        guard let image = photoImageView.image else { return }
+        
+        let fullScreenView = UIView(frame: UIScreen.main.bounds)
+        fullScreenView.backgroundColor = .black
+        fullScreenView.alpha = 0
+        
+        let iv = UIImageView(image: image)
+        iv.contentMode = .scaleAspectFit
+        iv.frame = fullScreenView.bounds
+        fullScreenView.addSubview(iv)
+        
+        let closeBtn = UIButton(type: .system)
+        closeBtn.setImage(UIImage(systemName: "xmark"), for: .normal)
+        closeBtn.tintColor = .white
+        closeBtn.frame = CGRect(x: UIScreen.main.bounds.width - 60, y: 60, width: 44, height: 44)
+        closeBtn.addTarget(self, action: #selector(dismissFullScreenPhoto(_:)), for: .touchUpInside)
+        fullScreenView.addSubview(closeBtn)
+        
+        if let window = window {
+            window.addSubview(fullScreenView)
+            UIView.animate(withDuration: 0.3) {
+                fullScreenView.alpha = 1
+            }
+        }
+    }
+    
+    @objc private func dismissFullScreenPhoto(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.3, animations: {
+            sender.superview?.alpha = 0
+        }) { _ in
+            sender.superview?.removeFromSuperview()
+        }
     }
     
     private func configure(with user: UserRemote) {

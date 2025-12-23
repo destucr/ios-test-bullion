@@ -42,8 +42,7 @@ class UserListViewController: UIViewController {
         sv.translatesAutoresizingMaskIntoConstraints = false
         sv.isPagingEnabled = true
         sv.showsHorizontalScrollIndicator = false
-        sv.clipsToBounds = true
-        sv.layer.cornerRadius = 15
+        sv.clipsToBounds = false // Allow peeking
         return sv
     }()
     
@@ -51,17 +50,17 @@ class UserListViewController: UIViewController {
         let stack = UIStackView()
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .horizontal
-        stack.distribution = .fillEqually
+        stack.spacing = 10
         return stack
     }()
     
-    private let pageControl: UIPageControl = {
-        let pc = UIPageControl()
-        pc.translatesAutoresizingMaskIntoConstraints = false
-        pc.currentPageIndicatorTintColor = AddUserViewController.orangeColor
-        pc.pageIndicatorTintColor = AddUserViewController.orangeColor.withAlphaComponent(0.5)
-        pc.numberOfPages = 3
-        return pc
+    private let indicatorStackView: UIStackView = {
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .horizontal
+        stack.spacing = 8
+        stack.alignment = .center
+        return stack
     }()
     
     private let bottomSheetView: UIView = {
@@ -102,6 +101,9 @@ class UserListViewController: UIViewController {
         return tv
     }()
 
+    private let banners: [String] = ["banner-first", "banner-second"]
+    private var bufferedBanners: [String] = []
+
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -127,17 +129,23 @@ class UserListViewController: UIViewController {
         headerView.addSubview(logoImageView)
         headerView.addSubview(logoutButton)
         
-        view.addSubview(bannerScrollView)
+        let bannerContainer = UIView()
+        bannerContainer.translatesAutoresizingMaskIntoConstraints = false
+        bannerContainer.clipsToBounds = true
+        view.addSubview(bannerContainer)
+        
+        bannerContainer.addSubview(bannerScrollView)
         bannerScrollView.addSubview(bannerStackView)
-        view.addSubview(pageControl)
+        view.addSubview(indicatorStackView)
         
         view.addSubview(bottomSheetView)
         bottomSheetView.addSubview(titleLabel)
         bottomSheetView.addSubview(tableView)
         bottomSheetView.addSubview(addUserButton)
         
+        let bannerWidth = UIScreen.main.bounds.width - 64
+        
         NSLayoutConstraint.activate([
-            // Header
             headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -151,11 +159,15 @@ class UserListViewController: UIViewController {
             logoutButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
             logoutButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
             
-            // Banner Scroll View
-            bannerScrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 10),
-            bannerScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            bannerScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            bannerScrollView.heightAnchor.constraint(equalToConstant: 150),
+            bannerContainer.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 10),
+            bannerContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bannerContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bannerContainer.heightAnchor.constraint(equalToConstant: 150),
+            
+            bannerScrollView.centerXAnchor.constraint(equalTo: bannerContainer.centerXAnchor),
+            bannerScrollView.widthAnchor.constraint(equalToConstant: bannerWidth),
+            bannerScrollView.topAnchor.constraint(equalTo: bannerContainer.topAnchor),
+            bannerScrollView.bottomAnchor.constraint(equalTo: bannerContainer.bottomAnchor),
             
             bannerStackView.topAnchor.constraint(equalTo: bannerScrollView.contentLayoutGuide.topAnchor),
             bannerStackView.leadingAnchor.constraint(equalTo: bannerScrollView.contentLayoutGuide.leadingAnchor),
@@ -163,12 +175,11 @@ class UserListViewController: UIViewController {
             bannerStackView.bottomAnchor.constraint(equalTo: bannerScrollView.contentLayoutGuide.bottomAnchor),
             bannerStackView.heightAnchor.constraint(equalTo: bannerScrollView.frameLayoutGuide.heightAnchor),
             
-            // Page Control
-            pageControl.topAnchor.constraint(equalTo: bannerScrollView.bottomAnchor, constant: 5),
-            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            indicatorStackView.topAnchor.constraint(equalTo: bannerContainer.bottomAnchor, constant: 8),
+            indicatorStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            indicatorStackView.heightAnchor.constraint(equalToConstant: 12),
             
-            // Bottom Sheet
-            bottomSheetView.topAnchor.constraint(equalTo: pageControl.bottomAnchor, constant: 10),
+            bottomSheetView.topAnchor.constraint(equalTo: indicatorStackView.bottomAnchor, constant: 10),
             bottomSheetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomSheetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomSheetView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -176,7 +187,6 @@ class UserListViewController: UIViewController {
             titleLabel.topAnchor.constraint(equalTo: bottomSheetView.topAnchor, constant: 24),
             titleLabel.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 24),
             
-            // Table view occupies most space
             tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
             tableView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor),
@@ -187,40 +197,61 @@ class UserListViewController: UIViewController {
             addUserButton.heightAnchor.constraint(equalToConstant: 50),
             addUserButton.bottomAnchor.constraint(equalTo: bottomSheetView.safeAreaLayoutGuide.bottomAnchor, constant: -20)
         ])
-        
-        // Fix for PageControl colors
-        if let activeColor = UIColor(named: "indicatorActive") {
-            pageControl.currentPageIndicatorTintColor = activeColor
-        } else {
-            pageControl.currentPageIndicatorTintColor = AddUserViewController.orangeColor
-        }
-        
-        pageControl.pageIndicatorTintColor = pageControl.currentPageIndicatorTintColor?.withAlphaComponent(0.5)
     }
 
     private func setupBanners() {
-        let bannerNames = ["banner-first", "banner-second", "banner-first"]
-        pageControl.numberOfPages = bannerNames.count
-        
+        bufferedBanners = [banners.last!] + banners + [banners.first!]
         bannerStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
-        for name in bannerNames {
+        let bannerWidth = UIScreen.main.bounds.width - 64
+        for name in bufferedBanners {
             let iv = UIImageView()
-            iv.image = UIImage(named: name)
-            iv.contentMode = .scaleAspectFill
-            iv.clipsToBounds = true
-            iv.layer.cornerRadius = 15
+            iv.image = UIImage(named: name); iv.contentMode = .scaleAspectFill
+            iv.clipsToBounds = true; iv.layer.cornerRadius = 15
             iv.translatesAutoresizingMaskIntoConstraints = false
-            
             bannerStackView.addArrangedSubview(iv)
-            iv.widthAnchor.constraint(equalTo: bannerScrollView.frameLayoutGuide.widthAnchor).isActive = true
+            iv.widthAnchor.constraint(equalToConstant: bannerWidth).isActive = true
         }
+        setupIndicators()
         bannerScrollView.delegate = self
+        DispatchQueue.main.async {
+            self.bannerScrollView.contentOffset = CGPoint(x: (bannerWidth + 10), y: 0)
+            self.updateIndicators(index: 0)
+        }
+    }
+    
+    private func setupIndicators() {
+        indicatorStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let activeColor = UIColor(named: "indicatorActive") ?? AddUserViewController.orangeColor
+        for _ in 0..<banners.count {
+            let dot = UIView()
+            dot.backgroundColor = activeColor.withAlphaComponent(0.5)
+            dot.layer.cornerRadius = 4
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            dot.widthAnchor.constraint(equalToConstant: 8).isActive = true
+            dot.heightAnchor.constraint(equalToConstant: 8).isActive = true
+            indicatorStackView.addArrangedSubview(dot)
+        }
+    }
+    
+    private func updateIndicators(index: Int) {
+        let activeColor = UIColor(named: "indicatorActive") ?? AddUserViewController.orangeColor
+        for (i, dot) in indicatorStackView.arrangedSubviews.enumerated() {
+            let isActive = i == index
+            UIView.animate(withDuration: 0.3) {
+                dot.backgroundColor = activeColor.withAlphaComponent(isActive ? 1.0 : 0.5)
+                dot.layer.cornerRadius = isActive ? 6 : 4
+                dot.constraints.forEach { c in
+                    if c.firstAttribute == .width || c.firstAttribute == .height {
+                        c.constant = isActive ? 12 : 8
+                    }
+                }
+                self.view.layoutIfNeeded()
+            }
+        }
     }
     
     private func setupTableView() {
-        tableView.delegate = self
-        tableView.dataSource = self
+        tableView.delegate = self; tableView.dataSource = self
         tableView.register(UserCardCell.self, forCellReuseIdentifier: "UserCardCell")
     }
     
@@ -230,200 +261,134 @@ class UserListViewController: UIViewController {
     }
     
     private func setupBindings() {
-        viewModel.onDataLoaded = { [weak self] in
-            self?.tableView.reloadData()
+        viewModel.onDataLoaded = { [weak self] in self?.tableView.reloadData() }
+        viewModel.onUserDetailLoaded = { [weak self] user in self?.showUserDetail(user) }
+        viewModel.onError = { [weak self] msg in
+            let alert = UIAlertController(title: "Error", message: msg, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default)); self?.present(alert, animated: true)
         }
-        
-        viewModel.onUserDetailLoaded = { [weak self] user in
-            self?.showUserDetail(user)
-        }
-        
-        viewModel.onError = { [weak self] message in
-            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            self?.present(alert, animated: true)
-        }
-        
-        viewModel.onLogout = { [weak self] in
-            self?.navigationController?.popToRootViewController(animated: true)
-        }
-        
-        viewModel.onLoading = { [weak self] isLoading in
-            self?.showLoading(isLoading)
-        }
+        viewModel.onLogout = { [weak self] in self?.navigationController?.popToRootViewController(animated: true) }
+        viewModel.onLoading = { [weak self] loading in self?.showLoading(isLoading: loading) }
     }
     
-    private func fetchData() {
-        viewModel.fetchUsers()
-    }
-    
-    @objc private func logoutTapped() {
-        viewModel.logout()
-    }
-    
-    @objc private func addUserTapped() {
-        let vc = AddUserViewController()
-        navigationController?.pushViewController(vc, animated: true)
-    }
+    private func showLoading(isLoading: Bool) { self.showLoading(isLoading) }
+    private func fetchData() { viewModel.fetchUsers() }
+    @objc private func logoutTapped() { viewModel.logout() }
+    @objc private func addUserTapped() { navigationController?.pushViewController(AddUserViewController(), animated: true) }
     
     private func showUserDetail(_ user: UserRemote) {
         let popup = UserDetailPopupView(user: user)
         popup.onEdit = { [weak self] in
-            let vc = AddUserViewController()
-            vc.userToEdit = user
+            let vc = AddUserViewController(); vc.userToEdit = user
             self?.navigationController?.pushViewController(vc, animated: true)
         }
-        
-        popup.frame = view.bounds
-        view.addSubview(popup)
-        popup.alpha = 0
-        UIView.animate(withDuration: 0.3) {
-            popup.alpha = 1
-        }
+        popup.frame = view.bounds; view.addSubview(popup); popup.alpha = 0
+        UIView.animate(withDuration: 0.3) { popup.alpha = 1 }
     }
 }
 
-// MARK: - TableView Extensions
 extension UserListViewController: UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return viewModel.users.count
-    }
-    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { return viewModel.users.count }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "UserCardCell", for: indexPath) as! UserCardCell
-        let user = viewModel.users[indexPath.row]
-        cell.configure(with: user)
-        return cell
+        cell.configure(with: viewModel.users[indexPath.row]); return cell
     }
-    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let user = viewModel.users[indexPath.row]
-        viewModel.fetchUserDetail(id: user._id)
+        viewModel.fetchUserDetail(id: viewModel.users[indexPath.row]._id)
     }
 }
 
-// MARK: - ScrollView Delegate
 extension UserListViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        if scrollView == bannerScrollView {
-            let width = scrollView.frame.width
-            if width > 0 {
-                let pageIndex = round(scrollView.contentOffset.x / width)
-                pageControl.currentPage = Int(pageIndex)
-            }
+        guard scrollView == bannerScrollView else { return }
+        let itemWidth = scrollView.frame.width + 10
+        let offset = scrollView.contentOffset.x
+        
+        // Infinite scroll looping logic
+        if offset <= 0 {
+            scrollView.contentOffset = CGPoint(x: itemWidth * CGFloat(banners.count), y: 0)
+        } else if offset >= itemWidth * CGFloat(banners.count + 1) {
+            scrollView.contentOffset = CGPoint(x: itemWidth, y: 0)
         }
+        
+        // Correct Indicator Index Calculation
+        // Subtract itemWidth to account for the buffer at index 0
+        let relativeOffset = scrollView.contentOffset.x - itemWidth
+        var page = Int(round(relativeOffset / itemWidth))
+        
+        // Loop page index if it goes out of bounds
+        if page < 0 {
+            page = banners.count - 1
+        } else if page >= banners.count {
+            page = 0
+        }
+        
+        updateIndicators(index: page)
     }
 }
 
-// MARK: - UserCardCell
 class UserCardCell: UITableViewCell {
-    
     private let cardView: UIView = {
-        let view = UIView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = .white
-        view.layer.cornerRadius = 15
-        view.layer.shadowColor = UIColor.black.cgColor
-        view.layer.shadowOffset = CGSize(width: 0, height: 2)
-        view.layer.shadowOpacity = 0.1
-        view.layer.shadowRadius = 4
-        return view
+        let v = UIView(); v.translatesAutoresizingMaskIntoConstraints = false; v.backgroundColor = .white
+        v.layer.cornerRadius = 15; v.layer.shadowColor = UIColor.black.cgColor
+        v.layer.shadowOffset = CGSize(width: 0, height: 2); v.layer.shadowOpacity = 0.1; v.layer.shadowRadius = 4
+        return v
     }()
-    
     private let photoImageView: UIImageView = {
-        let iv = UIImageView()
-        iv.translatesAutoresizingMaskIntoConstraints = false
-        iv.backgroundColor = .systemGray6
-        iv.layer.cornerRadius = 30
-        iv.clipsToBounds = true
-        iv.contentMode = .scaleAspectFill
+        let iv = UIImageView(); iv.translatesAutoresizingMaskIntoConstraints = false
+        iv.backgroundColor = .systemGray6; iv.layer.cornerRadius = 30; iv.clipsToBounds = true; iv.contentMode = .scaleAspectFill
         return iv
     }()
-    
     private let nameLabel: UILabel = {
-        let lbl = UILabel()
-        lbl.translatesAutoresizingMaskIntoConstraints = false
-        lbl.font = UIFont.boldSystemFont(ofSize: 16)
-        return lbl
+        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.boldSystemFont(ofSize: 25)
+        return l
     }()
-    
     private let emailLabel: UILabel = {
-        let lbl = UILabel()
-        lbl.translatesAutoresizingMaskIntoConstraints = false
-        lbl.font = UIFont.systemFont(ofSize: 14)
-        lbl.textColor = .gray
-        return lbl
+        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.systemFont(ofSize: 12); l.textColor = .gray
+        return l
     }()
-    
     private let dobLabel: UILabel = {
-        let lbl = UILabel()
-        lbl.translatesAutoresizingMaskIntoConstraints = false
-        lbl.font = UIFont.systemFont(ofSize: 12)
-        lbl.textColor = .lightGray
-        return lbl
+        let l = UILabel(); l.translatesAutoresizingMaskIntoConstraints = false; l.font = UIFont.systemFont(ofSize: 12); l.textColor = UIColor(red: 0x03/255, green: 0x03/255, blue: 0x03/255, alpha: 1.0)
+        return l
     }()
-    
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        setupUI()
-    }
-    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) { super.init(style: style, reuseIdentifier: reuseIdentifier); setupUI() }
     required init?(coder: NSCoder) { fatalError() }
-    
     private func setupUI() {
-        backgroundColor = .clear
-        selectionStyle = .none
-        
+        backgroundColor = .clear; selectionStyle = .none
         contentView.addSubview(cardView)
-        cardView.addSubview(photoImageView)
-        cardView.addSubview(nameLabel)
-        cardView.addSubview(emailLabel)
-        cardView.addSubview(dobLabel)
-        
+        [photoImageView, nameLabel, emailLabel, dobLabel].forEach { cardView.addSubview($0) }
         NSLayoutConstraint.activate([
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
-            
             photoImageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
             photoImageView.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
             photoImageView.widthAnchor.constraint(equalToConstant: 60),
             photoImageView.heightAnchor.constraint(equalToConstant: 60),
-            
             nameLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             nameLabel.leadingAnchor.constraint(equalTo: photoImageView.trailingAnchor, constant: 12),
             nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: dobLabel.leadingAnchor, constant: -8),
-            
             emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
             emailLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             emailLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
             emailLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12),
-            
             dobLabel.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
             dobLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12)
         ])
     }
-    
     func configure(with user: UserRemote) {
-        nameLabel.text = user.displayName
-        emailLabel.text = user.email
-        
+        nameLabel.text = user.displayName; emailLabel.text = user.email
         if let dobString = user.date_of_birth {
-            let isoFormatter = ISO8601DateFormatter()
-            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = isoFormatter.date(from: dobString) {
-                let displayFormatter = DateFormatter()
-                displayFormatter.dateFormat = "dd MMMM yyyy"
-                dobLabel.text = displayFormatter.string(from: date)
+            let iso = ISO8601DateFormatter(); iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso.date(from: dobString) {
+                let df = DateFormatter(); df.dateFormat = "dd MMMM yyyy"; dobLabel.text = df.string(from: date)
             } else { dobLabel.text = dobString }
         } else { dobLabel.text = "N/A" }
-        
-        if let photoBase64 = user.photo, !photoBase64.isEmpty {
-            let cleanBase64 = photoBase64.components(separatedBy: ",").last ?? photoBase64
-            if let imageData = Data(base64Encoded: cleanBase64) {
-                photoImageView.image = UIImage(data: imageData)
-            } else { photoImageView.image = UIImage(systemName: "person.fill") }
+        if let b64 = user.photo, !b64.isEmpty {
+            let clean = b64.components(separatedBy: ",").last ?? b64
+            if let data = Data(base64Encoded: clean) { photoImageView.image = UIImage(data: data) }
+            else { photoImageView.image = UIImage(systemName: "person.fill") }
         } else { photoImageView.image = UIImage(systemName: "person.fill") }
     }
 }
