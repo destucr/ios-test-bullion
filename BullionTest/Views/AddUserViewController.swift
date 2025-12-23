@@ -346,24 +346,27 @@ class AddUserViewController: UIViewController, UIImagePickerControllerDelegate, 
             NSLayoutConstraint.activate([
                 passwordLabel.topAnchor.constraint(equalTo: photoContainerView.bottomAnchor, constant: section),
                 passwordLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-                passwordField.topAnchor.constraint(equalTo: passwordLabel.bottomAnchor, constant: spacing),
+                
+                passwordWarningLabel.topAnchor.constraint(equalTo: passwordLabel.bottomAnchor, constant: 4),
+                passwordWarningLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+                
+                passwordField.topAnchor.constraint(equalTo: passwordWarningLabel.bottomAnchor, constant: spacing),
                 passwordField.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
                 passwordField.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
                 passwordField.heightAnchor.constraint(equalToConstant: 50),
-                passwordWarningLabel.topAnchor.constraint(equalTo: passwordField.bottomAnchor, constant: 5),
-                passwordWarningLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
                 
-                confirmPasswordLabel.topAnchor.constraint(equalTo: passwordWarningLabel.bottomAnchor, constant: section),
+                confirmPasswordLabel.topAnchor.constraint(equalTo: passwordField.bottomAnchor, constant: section),
                 confirmPasswordLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-                confirmPasswordField.topAnchor.constraint(equalTo: confirmPasswordLabel.bottomAnchor, constant: spacing),
+                
+                confirmPasswordWarningLabel.topAnchor.constraint(equalTo: confirmPasswordLabel.bottomAnchor, constant: 4),
+                confirmPasswordWarningLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+                
+                confirmPasswordField.topAnchor.constraint(equalTo: confirmPasswordWarningLabel.bottomAnchor, constant: spacing),
                 confirmPasswordField.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
                 confirmPasswordField.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
                 confirmPasswordField.heightAnchor.constraint(equalToConstant: 50),
                 
-                confirmPasswordWarningLabel.topAnchor.constraint(equalTo: confirmPasswordField.bottomAnchor, constant: 5),
-                confirmPasswordWarningLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-                
-                submitButton.topAnchor.constraint(equalTo: confirmPasswordWarningLabel.bottomAnchor, constant: 50),
+                submitButton.topAnchor.constraint(equalTo: confirmPasswordField.bottomAnchor, constant: 50),
             ])
         } else {
             NSLayoutConstraint.activate([
