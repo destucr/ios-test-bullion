@@ -156,21 +156,41 @@ class AddUserViewModel {
             params["password"] = sha256(password ?? "")
         }
         
-        let photoData = photo?.jpegData(compressionQuality: 0.5)
         let endpoint: APIEndpoint = isEditMode ? .updateUser(id: userId!) : .register
         
-        NetworkManager.shared.multipartRequest(endpoint: endpoint, params: params, imageData: photoData, imageKey: "photo") { (result: Result<BaseResponse<LoginData>, Error>) in
-            DispatchQueue.main.async {
-                self.delegate?.onLoading(false)
-                switch result {
-                case .success(let response):
-                    if response.iserror {
-                        self.delegate?.onRegistrationFailure(message: response.message)
-                    } else {
-                        self.delegate?.onRegistrationSuccess()
+        if isEditMode {
+            // For Update: Use standard JSON request and exclude photo
+            NetworkManager.shared.request(endpoint: endpoint, body: params) { (result: Result<BaseResponse<LoginData>, Error>) in
+                DispatchQueue.main.async {
+                    self.delegate?.onLoading(false)
+                    switch result {
+                    case .success(let response):
+                        if response.iserror {
+                            self.delegate?.onRegistrationFailure(message: response.message)
+                        } else {
+                            self.delegate?.onRegistrationSuccess()
+                        }
+                    case .failure(let error):
+                        self.delegate?.onRegistrationFailure(message: error.localizedDescription)
                     }
-                case .failure(let error):
-                    self.delegate?.onRegistrationFailure(message: error.localizedDescription)
+                }
+            }
+        } else {
+            // For Register: Use multipart to support photo upload
+            let photoData = photo?.jpegData(compressionQuality: 0.5)
+            NetworkManager.shared.multipartRequest(endpoint: endpoint, params: params, imageData: photoData, imageKey: "photo") { (result: Result<BaseResponse<LoginData>, Error>) in
+                DispatchQueue.main.async {
+                    self.delegate?.onLoading(false)
+                    switch result {
+                    case .success(let response):
+                        if response.iserror {
+                            self.delegate?.onRegistrationFailure(message: response.message)
+                        } else {
+                            self.delegate?.onRegistrationSuccess()
+                        }
+                    case .failure(let error):
+                        self.delegate?.onRegistrationFailure(message: error.localizedDescription)
+                    }
                 }
             }
         }
