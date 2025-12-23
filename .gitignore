@@ -1,0 +1,29 @@
+# Xcode
+#
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace/xcuserdata/
+
+# OS X
+#
+.DS_Store
+profile
+
+# Env
+#
+.env
+
+# Swift Package Manager
+#
+.build/
+.swiftpm/
+
+# User-specific files
+#
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/

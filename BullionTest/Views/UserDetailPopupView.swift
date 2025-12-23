@@ -38,7 +38,7 @@ class UserDetailPopupView: UIView {
     private let nameLabel: UILabel = {
         let lbl = UILabel()
         lbl.translatesAutoresizingMaskIntoConstraints = false
-        lbl.font = UIFont.systemFont(ofSize: 15)
+        lbl.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         lbl.textAlignment = .left
         return lbl
     }()
@@ -46,7 +46,7 @@ class UserDetailPopupView: UIView {
     private let emailLabel: UILabel = {
         let lbl = UILabel()
         lbl.translatesAutoresizingMaskIntoConstraints = false
-        lbl.font = UIFont.systemFont(ofSize: 14)
+        lbl.font = UIFont.systemFont(ofSize: 10, weight: .medium)
         lbl.textColor = UIColor(hex: "#5D5D5D")
         lbl.textAlignment = .left
         return lbl
@@ -202,14 +202,14 @@ class UserDetailPopupView: UIView {
         let titleLbl = UILabel()
         titleLbl.translatesAutoresizingMaskIntoConstraints = false
         titleLbl.text = title
-        titleLbl.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        titleLbl.font = UIFont.systemFont(ofSize: 10, weight: .medium)
         titleLbl.textColor = UIColor(hex: "#5D5D5D")
         titleLbl.textAlignment = .left
         
         let valueLbl = UILabel()
         valueLbl.translatesAutoresizingMaskIntoConstraints = false
         valueLbl.text = value
-        valueLbl.font = UIFont.systemFont(ofSize: 15)
+        valueLbl.font = UIFont.systemFont(ofSize: 10, weight: .medium)
         valueLbl.textColor = .black
         valueLbl.textAlignment = .left
         
